@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TEMSA VCC</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+ 
+    /* Combobox (select) için aynı genişlik ve hover efekti */
+    select {
+        width: 150px; /* Sabit genişlik */
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease-in-out;
+    }
+    select:hover {
+        background-color: #88c4f9; /* Açık gri arka plan */
+        cursor: pointer; /* Tıklanabilir olduğunu göstermek için */
+    }
+    /* Tablo başlık ve içerik hizalamaları */
+    table {
+        width: 100%;
+        text-align: center;
+    }
+    th, td {
+        padding: 10px;
+        vertical-align: middle;
+    }
+    /* Tooltip (Açıklama Baloncukları) */
+    .tooltip[data-tooltip]:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        background-color: #333;
+        color: #fff;
+        padding: 5px;
+        border-radius: 5px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+    
+ </style>
+ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ <script>
+ document.addEventListener("DOMContentLoaded", function () {
+     document.getElementById("matrixButton").addEventListener("click", showMatrix);
+     document.querySelectorAll('.value-select, .complexity-select').forEach(select => {
+         select.addEventListener('change', updateScore);
+     });
+ });
+ 
+ let matrixChart = null;  
+ 
+ function updateScore() {
+    let valueTotal = 0;
+    let complexityTotal = 0;
+    // Value toplamını hesapla
+    document.querySelectorAll('.value-select').forEach(select => {
+        let scoreElement = select.parentElement.nextElementSibling.querySelector('span');
+        let value = parseInt(select.value) || 0;
+        valueTotal += value;
+        if (scoreElement) {
+            scoreElement.innerText = value;
+        }
+    });
+    // Complexity toplamını hesapla
+    document.querySelectorAll('.complexity-select').forEach(select => {
+        let scoreElement = select.parentElement.nextElementSibling.querySelector('span');
+        let value = parseInt(select.value) || 0;
+        complexityTotal += value;
+        if (scoreElement) {
+            scoreElement.innerText = value;
+        }
+    });
+    // Güncellenmiş toplamları ekrana yazdır
+    document.getElementById('value_total').innerText = valueTotal;
+    document.getElementById('complexity_total').innerText = complexityTotal;
+    document.getElementById('overall_total').innerText = valueTotal + complexityTotal;
+}
+
+
+
+ function showMatrix() {
+     let value = parseInt(document.getElementById('value_total').innerText.trim()) || 0;
+     let complexity = parseInt(document.getElementById('complexity_total').innerText.trim()) || 0;
+ 
+     const ctx = document.getElementById('matrixChart').getContext('2d');
+ 
+
+     if (matrixChart) {
+   matrixChart.destroy();
+}
+ 
+     matrixChart = new Chart(ctx, {
+         type: 'scatter',
+         data: {
+             datasets: [{
+                 label: 'Proje Konumu',
+                 data: [{ x: complexity, y: value }],
+                 backgroundColor: 'blue',
+                 pointRadius: 5
+             }]
+         },
+         options: {
+             responsive: true,
+    
+             scales: {
+                 x: {
+                     min: 0,
+                     max: 20,
+                     title: { display: true, text: 'Cost & Complexity' }
+                 },
+                 y: {
+                     min: 0,
+                     max: 25,
+                     title: { display: true, text: 'Value' }
+                 }
+             }
+         }
+     });
+ }
+ </script>
+
+</head>
+<body class="bg-light">
+<div class="container-fluid py-4">
+<h2 class="text-center mb-4">TEMSA</h2>
+<form method="POST" class="bg-white p-4 rounded shadow col-3 float-start">
+   {% csrf_token %}
+<div class="mb-3">
+<label class="form-label">Project Name:</label>
+<input type="text" name="project_name" class="form-control" required>
+</div>
+<h3 class="mt-4">Annual Budget</h3>
+<div class="mb-3">
+<label class="form-label">Currency:</label>
+<select id="currency" class="form-select">
+<option value="$">US Dollar ($)</option>
+<option value="€">Euro (€)</option>
+<option value="100¥">Japanese Yen (¥)</option>
+<option value="£">British Pound (£)</option>
+</select>
+</div>
+<h3 class="mt-4">Enter Budget for Each Year</h3>
+<div class="year-input mb-3" data-year="2025">
+<label>2025 Budget:</label>
+<input type="number" class="form-control budget" name="budget_2025" required>
+<select class="form-select timeframe">
+<option value="yearly">Yearly</option>
+<option value="monthly">Monthly</option>
+<option value="year_end">year_end</option>
+<option value="year_avg">year_avg</option>
+</select>
+</div>
+<div class="year-input mb-3" data-year="2026">
+<label>2026 Budget:</label>
+<input type="number" class="form-control budget" name="budget_2026" required>
+<select class="form-select timeframe">
+    <option value="yearly">Yearly</option>
+    <option value="monthly">Monthly</option>
+    <option value="year_end">year_end</option>
+    <option value="year_avg">year_avg</option>
+</select>
+</div>
+
+<div class="year-input mb-3" data-year="2027">
+<label>2027 Budget:</label>
+<input type="number" class="form-control budget" name="budget_2027" required>
+<select class="form-select timeframe">
+    <option value="yearly">Yearly</option>
+    <option value="monthly">Monthly</option>
+    <option value="year_end">year_end</option>
+    <option value="year_avg">year_avg</option>
+</select>
+</div>
+<h3 class="mt-4">Calculation Results</h3>
+<p>VCC excel verileri kullanılmıştır</p>
+<p>Total Revenue Growth: <span id="calculated_revenue">0</span></p>
+<button type="button" class="btn btn-primary" onclick="calculateRevenue()">Calculate</button>
+</form>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+       console.log("✅ Sayfa tamamen yüklendi!");
+       let calculateButton = document.getElementById("calculateButton");
+       if (calculateButton) {
+           calculateButton.addEventListener("click", calculateRevenue);
+       } else {
+           console.warn("⚠️ 'Calculate' butonu bulunamadı!");
+       }
+       document.querySelectorAll('.value-select, .complexity-select').forEach(select => {
+           select.addEventListener('change', updateScore);
+       });
+    });
+    const revenueData = {
+       "$": {
+           "2025": {"year_end": 24.2, "year_avg": 18.2, "yearly": 10.0, "monthly": 0.8},
+           "2026": {"year_end": 10.0, "year_avg": 8.5, "yearly": 5.0, "monthly": 0.4},
+           "2027": {"year_end": 9.0, "year_avg": 7.5, "yearly": 4.5, "monthly": 0.35}
+       },
+       "€": {
+           "2025": {"year_end": 27.6, "year_avg": 22.8, "yearly": 11.0, "monthly": 0.9},
+           "2026": {"year_end": 11.0, "year_avg": 9.2, "yearly": 6.0, "monthly": 0.5},
+           "2027": {"year_end": 9.0, "year_avg": 7.8, "yearly": 5.5, "monthly": 0.45}
+       }
+    };
+    function calculateRevenue() {
+       console.log(" Hesaplama başladı...");
+       let totalRevenue = 0;
+       let currency = document.getElementById("currency").value;
+       document.querySelectorAll(".year-input").forEach(div => {
+           let year = div.getAttribute("data-year");
+           let budget = parseFloat(div.querySelector(".budget").value) || 0;
+           let timeframe = div.querySelector(".timeframe").value;
+           let percentage = revenueData[currency]?.[year]?.[timeframe] || 0;
+           let convertedRevenue = budget * (percentage / 100);
+           totalRevenue += convertedRevenue;
+       });
+       console.log(` Toplam Hesaplanan Gelir Artışı: ${totalRevenue.toFixed(2)} EUR`);
+       document.getElementById("calculated_revenue").innerText = `${totalRevenue.toFixed(2)} EUR`;
+       // 🚀 **Hesaplama yapıldıktan sonra otomatik seçim yap**
+       autoSelectIncreaseRevenue(totalRevenue);
+    }
+    function autoSelectIncreaseRevenue(value) {
+       let select = document.querySelector("select[name='increase_revenue']");
+       if (!select) {
+           console.error(" Combobox bulunamadı!");
+           return;
+       }
+       let options = select.options;
+       let bestMatch = options[0];
+       for (let option of options) {
+           let range = option.textContent.match(/([0-9]+[K|MIO]*)/g);
+           if (range) {
+               let min = parseFloat(range[0].replace('K', '000').replace('MIO', '1000000'));
+               let max = range.length > 1 ? parseFloat(range[1].replace('K', '000').replace('MIO', '1000000')) : Infinity;
+               if (value >= min && value <= max) {
+                   bestMatch = option;
+                   break;
+               }
+           }
+       }
+       bestMatch.selected = true;
+       console.log(` Combobox otomatik seçildi: ${bestMatch.textContent}`);
+       let selectedScore = parseInt(bestMatch.value) || 0;
+       document.getElementById("increase_revenue_score").innerText = selectedScore;
+       updateOverallTotal(selectedScore);
+    }
+    function updateOverallTotal(score) {
+       let valueTotal = parseInt(document.getElementById("value_total").innerText) || 0;
+       let complexityTotal = parseInt(document.getElementById("complexity_total").innerText) || 0;
+       let overallTotal = valueTotal + complexityTotal + score;
+       document.getElementById("overall_total").innerText = overallTotal;
+    }
+    </script>
+<h3 class="mt-4 col-8 float-end">Value Assessment</h3>
+<div class="table-responsive col-8 float-end">
+<table class="table table-bordered table-hover">
+<thead class="table-secondary">
+<tr>
+<th>Title</th>
+<th>Options</th>
+<th>Score</th>
+</tr>
+</thead>
+<script>
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+ </script>
+<tbody>
+<tr>
+<td data-bs-toggle="tooltip" title="Gelir artışındaki üç yıllık tahmin">Increase Revenue(Euro/3 Years)**</td>
+<td>
+<select name="increase_revenue" class="value-select" onchange="updateScore()">
+<option value="0">N/A</option>
+<option value="1">1-100K</option>
+<option value="2">100K-250K</option>
+<option value="3">250K-500K</option>
+<option value="4">500K-1MIO</option>
+<option value="5">>1MIO</option>
+</select>
+</td>
+<td><span id="increase_revenue_score">0</span></td>
+</tr>
+</tr>
+<tr>
+<tr>
+<td data-bs-toggle="tooltip" title="maaliyet azalmasındaki üç yıllık tahmin">Cost Optimization(Euro/3 Years)**</td>
+<td>
+<select name="cost_optimization" class="value-select" onchange="updateScore()">
+<option value="0">N/A</option>
+<option value="1">1-25K</option>
+<option value="2">25K-100K</option>
+<option value="3">100K-250K</option>
+<option value="4">250K-500K</option>
+<option value="5">>500K</option>
+</select>
+</td>
+<td><span id="cost_optimization_score">0</span></td>
+</tr>
+<tr>
+<td data-bs-toggle="tooltip" title="müşteri çalışan deneyimine etkisine etki alanına göre karar vermektedir">Customer/Employee Experience</td>
+<td>
+<select name="customer_experience" class="value-select" onchange="updateScore()">
+<option value="0">N/A</option>
+<option value="1">Little</option>
+<option value="2">Moderate</option>
+<option value="3">Medium</option>
+<option value="4">High</option>
+<option value="5">Strong</option>
+</select>
+</td>
+<td><span id="customer_experience_score">0</span></td>
+</tr>
+<tr>
+<td data-bs-toggle="tooltip" title="mdijital talep gerçekleştirilmeksizin oluşan regulative etki değerlendirilmeli">regulative</td>
+<td>
+<select name="regulative" class="value-select" onchange="updateScore()">
+<option value="0">N/A</option>
+<option value="2">Nice to Have</option>
+<option value="3">Potential Gap</option>
+<option value="4">Potential Penalty</option>
+<option value="5">Must Have (Possible Penalty)</option>
+</select>
+</td>
+<td><span id="regulative_score">0</span></td>
+</tr>
+<tr>
+<td data-bs-toggle="tooltip" title="5 adet strateji konu başlığından kaç tanesine dokunulacak Sürdürülebilirlik yeni fırsat">Other Company strategy</td>
+<td>
+<select name="strategy" class="value-select" onchange="updateScore()">
+<option value="0">N/A</option>
+<option value="1">Little</option>
+<option value="2">Moderate</option>
+<option value="3">Medium</option>
+<option value="4">High</option>
+<option value="5">Strong</option>
+</select>
+</td>
+<td><span id="strategy_score">0</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="table-responsive col-8 mt-5 float-end">
+ <h3 class="mt-4">Cost/Complexity Assessment</h3>
+<table class="table table-bordered table-hover">
+<thead class="table-secondary">
+<tr>
+<th>Title</th>
+<th>Options</th>
+<th>Score</th>
+</tr>
+</thead>
+<tbody>
+    <tr>
+<td data-bs-toggle="tooltip" title="IT bünyesinde kaç adam günlük çalışma yapılacağı">Human/ Days (Inhouse IT effort)</td>
+<td>
+<select name="human_days" class="complexity-select" onchange="updateScore()">
+<option value="0">N/A</option>
+<option value="1">1-10h/d</option>
+<option value="2">10-40h/d</option>
+<option value="3">40-200h/d</option>
+<option value="4">200-600h/d</option>
+<option value="5">>600h/d</option>
+</select>
+</td>
+<td><span id="human_days_score">0</span></td>
+</tr>
+<tr>
+<td data-bs-toggle="tooltip" title="outsorce firma için harcanan bütçe">Budget (outsourced/procured)
+</td>
+<td>
+<select name="budget" class="complexity-select" onchange="updateScore()">
+<option value="0">N/A</option>
+<option value="1">1-20K</option>
+<option value="2">25-100K</option>
+<option value="3">100-250K</option>
+<option value="4">250-500K</option>
+<option value="5">>500K</option>
+</select>
+</td>
+<td><span id="budget_score">0</span></td>
+</tr>
+<tr>
+<td data-bs-toggle="tooltip" title="proje kapsamındaki sistem sayısı">of integrations/systems
+</td>
+<td>
+<select name="integrations_systems" class="complexity-select" onchange="updateScore()">
+<option value="0">N/A</option>
+<option value="1">1</option>
+<option value="2">3</option>
+<option value="3">5</option>
+<option value="4">7</option>
+<option value="5">>7</option>
+</select>
+</td>
+<td><span id="integrations_systems_score">0</span></td>
+</tr>
+<tr>
+<td data-bs-toggle="tooltip" title="projeden etkilenecek direktör sayısı">of department/processes
+</td>
+<td>
+<select name="department_processes" class="complexity-select" onchange="updateScore()">
+<option value="0">N/A</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+<option value="5">>4</option>
+</select>
+</td>
+<td><span id="department_processes_score">0</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="text-center col-4 mt-4  float-end">
+<p>Value Total: <span id="value_total">0</span></p>
+<p>Cost/Complexity Total: <span id="complexity_total">0</span></p>
+<p>Overall Total: <span id="overall_total">0</span></p>
+<button type="button" class="btn btn-success" onclick="submitForm()">Submit</button>
+ 
+</div>
+
+<div class="float-end mt-4 " style="width: 600px; height: 400px;">
+    <canvas  id="matrixChart"></canvas>
+    <button type="button" class="btn btn-primary mt-3 " onclick="showMatrix()">Matrix Göster</button>
+</div>
+</form>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Value & Cost Complexity</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script>
+       function calculateTotal() {
+           let total = 0;
+           document.querySelectorAll('.value-cost-select').forEach(select => {
+               total += parseInt(select.value);
+           });
+           document.getElementById('totalScore').textContent = total;
+       }
+</script>
+<div class="mt-4">
+</div>
+</form>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+       document.addEventListener("DOMContentLoaded", function() {
+           var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+           tooltipTriggerList.map(function(tooltipTriggerEl) {
+               return new bootstrap.Tooltip(tooltipTriggerEl);
+           });
+       });
+
+       function submitForm() {
+   let project_name = document.querySelector("input[name='project_name']").value;
+   let increase_revenue = parseInt(document.querySelector("select[name='increase_revenue']").value) || 0;
+   let cost_optimization = parseInt(document.querySelector("select[name='cost_optimization']").value) || 0;
+   let customer_experience = parseInt(document.querySelector("select[name='customer_experience']").value) || 0;
+   let regulative = parseInt(document.querySelector("select[name='regulative']").value) || 0;
+   let strategy = parseInt(document.querySelector("select[name='strategy']").value) || 0;
+   let human_days = parseInt(document.querySelector("select[name='human_days']").value) || 0;
+   let budget = parseInt(document.querySelector("select[name='budget']").value) || 0;
+   let integrations_systems = parseInt(document.querySelector("select[name='integrations_systems']").value) || 0;
+   let department_processes = parseInt(document.querySelector("select[name='department_processes']").value) || 0;
+   let calculated_revenue = parseFloat(document.getElementById("calculated_revenue").innerText) || 0;
+   let calculated_score = parseInt(document.getElementById("increase_revenue_score").innerText) || 0;
+   let value_total = increase_revenue + cost_optimization + customer_experience + regulative + strategy;
+   let complexity_total = human_days + budget + integrations_systems + department_processes;
+   let overall_total = value_total + complexity_total + calculated_score;
+   let formData = {
+       project_name,
+       increase_revenue,
+       cost_optimization,
+       customer_experience,
+       regulative,
+       strategy,
+       value_total,
+       human_days,
+       budget,
+       integrations_systems,
+       department_processes,
+       complexity_total,
+       overall_total,
+       calculated_revenue,
+       calculated_score
+   };
+   fetch("{% url 'project_evaluation' %}", {
+       method: "POST",
+       headers: {
+           "Content-Type": "application/json",
+           "X-CSRFToken": getCsrfToken()  // CSRF token almak için fonksiyon
+       },
+       body: JSON.stringify(formData)
+   })
+   .then(response => response.json())
+   .then(data => {
+       if (data.message) {
+           alert("Project successfully saved!");
+           window.location.reload();  // Sayfayı yenile
+       } else {
+           alert("Error: " + data.error);
+       }
+   })
+   .catch(error => console.error("Error:", error));
+}
+// Django CSRF token'ı almak için yardımcı fonksiyon
+function getCsrfToken() {
+   return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+</script>
+</body>
+</html>
